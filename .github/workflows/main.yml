@@ -1,0 +1,30 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ main,development ]
+
+env:
+  AWS_REGION: us-east-1
+  EC2_INSTANCE_ID: i-03cd329cf9c5efcbe
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+    - uses: aws-actions/amazon-ecr-login@v1
+    - run: |
+        docker build -t mcp-server .
+        docker tag mcp-server:latest ${{ steps.login-ecr.outputs.registry }}/mcp-server:latest
+        docker push ${{ steps.login-ecr.outputs.registry }}/mcp-server:latest
+    - run: |
+        aws ssm send-command \
+        --instance-ids ${{ env.EC2_INSTANCE_ID }} \
+        --document-name "AWS-RunShellScript" \
+        --parameters 'commands=["/home/ec2-user/deploy.sh"]'
