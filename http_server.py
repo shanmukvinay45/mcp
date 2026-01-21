@@ -1,7 +1,7 @@
 """HTTP wrapper for MCP Server"""
 import json
 from aiohttp import web
-from server import app as mcp_app
+from server import list_tools as get_tools_list, call_tool as mcp_call_tool
 
 async def handle_tool_call(request):
     try:
@@ -9,7 +9,7 @@ async def handle_tool_call(request):
         tool_name = data.get('tool')
         arguments = data.get('arguments', {})
         
-        result = await mcp_app.call_tool(tool_name, arguments)
+        result = await mcp_call_tool(tool_name, arguments)
         response_text = result[0].text if result else "{}"
         
         return web.json_response({
@@ -24,7 +24,7 @@ async def handle_tool_call(request):
 
 async def handle_list_tools(request):
     try:
-        tools = await mcp_app.list_tools()
+        tools = await get_tools_list()
         tools_data = [{
             'name': tool.name,
             'description': tool.description,
